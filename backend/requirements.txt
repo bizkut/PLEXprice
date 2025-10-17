@@ -1,6 +1,6 @@
 fastapi
-uvicorn==0.17.6
-websockets==10.3
+uvicorn==0.16.0
+websockets==10.1
 sqlalchemy
 psycopg2-binary
 requests
