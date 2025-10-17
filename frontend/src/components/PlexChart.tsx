@@ -73,7 +73,7 @@ const PlexChart: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch(`/historical-data/?timeframe=${timeframe}`);
+                const response = await fetch(`https://plex-api.gametrader.my/historical-data/?timeframe=${timeframe}`);
                 const data: PlexData[] = await response.json();
 
                 const candleData = data.map(item => ({
@@ -106,7 +106,7 @@ const PlexChart: React.FC = () => {
     }, [timeframe]);
 
     useEffect(() => {
-        const ws = new WebSocket(`ws://${window.location.host}/ws`);
+        const ws = new WebSocket(`wss://plex-api.gametrader.my/ws`);
 
         ws.onopen = () => {
             console.log('WebSocket connected');

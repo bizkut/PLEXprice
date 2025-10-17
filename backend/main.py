@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, WebSocket
+from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.background import BackgroundScheduler
 from fetch_data import fetch_and_store_plex_data
 from sqlalchemy.orm import Session
@@ -7,6 +8,19 @@ import datetime
 from websockets import manager
 
 app = FastAPI()
+
+origins = [
+    "https://plex.gametrader.my",
+    "http://localhost:3030",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def get_db():
     db = SessionLocal()
