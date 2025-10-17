@@ -28,9 +28,6 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=plex_market_data
 
-volumes:
-  postgres_data:
-
   cloudflared:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped
@@ -39,3 +36,6 @@ volumes:
     command: tunnel --no-autoupdate run
     depends_on:
       - frontend
+
+volumes:
+  postgres_data:
