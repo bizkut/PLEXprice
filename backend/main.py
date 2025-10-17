@@ -4,7 +4,7 @@ from fetch_data import fetch_and_store_plex_data
 from sqlalchemy.orm import Session
 from database import SessionLocal, PlexPrice
 import datetime
-from websockets import manager
+from websocket_manager import manager
 
 app = FastAPI()
 
