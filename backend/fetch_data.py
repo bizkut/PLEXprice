@@ -3,7 +3,7 @@ import datetime
 import json
 from sqlalchemy.orm import sessionmaker
 from database import PlexPrice, engine
-from websockets import manager
+from websocket_manager import manager
 
 API_URL = "https://evetycoon.com/api/v1/market/orders/44992"
 
