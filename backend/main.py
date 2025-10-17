@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, WebSocket
 from apscheduler.schedulers.background import BackgroundScheduler
 from fetch_data import fetch_and_store_plex_data
 from sqlalchemy.orm import Session
-from database import SessionLocal, PlexPrice
+from database import SessionLocal, PlexPrice, init_db
 import datetime
 from websocket_manager import manager
 
@@ -17,6 +17,10 @@ def get_db():
 
 @app.on_event("startup")
 def start_scheduler():
+    # Initialize the database
+    init_db()
+    print("Database initialized.")
+
     scheduler = BackgroundScheduler()
     # Fetch data on startup and then every 5 minutes
     fetch_and_store_plex_data()
