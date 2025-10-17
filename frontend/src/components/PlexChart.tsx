@@ -111,7 +111,8 @@ const PlexChart: React.FC = () => {
     }, [timeframe]);
 
     useEffect(() => {
-        const ws = new WebSocket(`ws://${window.location.host}/ws`);
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
 
         ws.onopen = () => {
             console.log('WebSocket connected');
