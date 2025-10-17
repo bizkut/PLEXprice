@@ -16,14 +16,14 @@ def get_db():
         db.close()
 
 @app.on_event("startup")
-def start_scheduler():
+async def start_scheduler():
     # Initialize the database
     init_db()
     print("Database initialized.")
 
     scheduler = BackgroundScheduler()
     # Fetch data on startup and then every 5 minutes
-    fetch_and_store_plex_data()
+    await fetch_and_store_plex_data()
     scheduler.add_job(fetch_and_store_plex_data, 'interval', minutes=5)
     scheduler.start()
     print("Scheduler started. Fetching data every 5 minutes.")

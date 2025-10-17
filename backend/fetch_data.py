@@ -1,4 +1,4 @@
-import requests
+import httpx
 import datetime
 import json
 from sqlalchemy.orm import sessionmaker
@@ -7,14 +7,15 @@ from websocket_manager import manager
 
 API_URL = "https://evetycoon.com/api/v1/market/orders/44992"
 
-def fetch_and_store_plex_data():
+async def fetch_and_store_plex_data():
     Session = sessionmaker(bind=engine)
     session = Session()
 
     try:
-        response = requests.get(API_URL)
-        response.raise_for_status()
-        data = response.json()
+        async with httpx.AsyncClient() as client:
+            response = await client.get(API_URL)
+            response.raise_for_status()
+            data = response.json()
 
         buy_orders = [order for order in data['orders'] if order['isBuyOrder']]
         sell_orders = [order for order in data['orders'] if not order['isBuyOrder']]
@@ -36,22 +37,17 @@ def fetch_and_store_plex_data():
         session.commit()
 
         # Broadcast the new data to all connected clients
-        async def broadcast_data():
-            await manager.broadcast(json.dumps({
-                "timestamp": new_price_data.timestamp.isoformat(),
-                "highest_buy": new_price_data.highest_buy,
-                "lowest_sell": new_price_data.lowest_sell,
-                "buy_volume": new_price_data.buy_volume,
-                "sell_volume": new_price_data.sell_volume
-            }))
-
-        # Run the async broadcast function
-        import asyncio
-        asyncio.run(broadcast_data())
+        await manager.broadcast(json.dumps({
+            "timestamp": new_price_data.timestamp.isoformat(),
+            "highest_buy": new_price_data.highest_buy,
+            "lowest_sell": new_price_data.lowest_sell,
+            "buy_volume": new_price_data.buy_volume,
+            "sell_volume": new_price_data.sell_volume
+        }))
 
         print("Successfully fetched, stored, and broadcasted new PLEX data.")
 
-    except requests.exceptions.RequestException as e:
+    except httpx.RequestError as e:
         print(f"Error fetching data from API: {e}")
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -59,4 +55,5 @@ def fetch_and_store_plex_data():
         session.close()
 
 if __name__ == "__main__":
-    fetch_and_store_plex_data()
+    import asyncio
+    asyncio.run(fetch_and_store_plex_data())
