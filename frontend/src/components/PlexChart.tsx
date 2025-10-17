@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { createChart, IChartApi, ISeriesApi } from 'lightweight-charts';
+import { createChart, IChartApi, ISeriesApi, CandlestickSeries, HistogramSeries, UTCTimestamp } from 'lightweight-charts';
 
 interface PlexData {
     timestamp: string;
@@ -44,7 +44,7 @@ const PlexChart: React.FC = () => {
                 },
             });
 
-            candlestickSeriesRef.current = chartRef.current.addCandlestickSeries({
+            candlestickSeriesRef.current = chartRef.current.addSeries(CandlestickSeries, {
                 upColor: '#26a69a',
                 downColor: '#ef5350',
                 borderDownColor: '#ef5350',
@@ -53,12 +53,14 @@ const PlexChart: React.FC = () => {
                 wickUpColor: '#26a69a',
             });
 
-            volumeSeriesRef.current = chartRef.current.addHistogramSeries({
+            volumeSeriesRef.current = chartRef.current.addSeries(HistogramSeries, {
                 color: '#26a69a',
                 priceFormat: {
                     type: 'volume',
                 },
                 priceScaleId: 'volume_scale',
+            });
+            volumeSeriesRef.current.priceScale().applyOptions({
                 scaleMargins: {
                     top: 0.8,
                     bottom: 0,
@@ -80,7 +82,7 @@ const PlexChart: React.FC = () => {
                 const data: PlexData[] = await response.json();
 
                 const candleData = data.map(item => ({
-                    time: new Date(item.timestamp).getTime() / 1000,
+                    time: (new Date(item.timestamp).getTime() / 1000) as UTCTimestamp,
                     open: item.highest_buy,
                     high: item.highest_buy,
                     low: item.lowest_sell,
@@ -88,7 +90,7 @@ const PlexChart: React.FC = () => {
                 }));
 
                 const volumeData = data.map(item => ({
-                    time: new Date(item.timestamp).getTime() / 1000,
+                    time: (new Date(item.timestamp).getTime() / 1000) as UTCTimestamp,
                     value: item.buy_volume + item.sell_volume,
                     color: item.highest_buy > item.lowest_sell ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
                 }));
@@ -119,14 +121,14 @@ const PlexChart: React.FC = () => {
         ws.onmessage = (event) => {
             const newData = JSON.parse(event.data);
             const candleData = {
-                time: new Date(newData.timestamp).getTime() / 1000,
+                time: (new Date(newData.timestamp).getTime() / 1000) as UTCTimestamp,
                 open: newData.highest_buy,
                 high: newData.highest_buy,
                 low: newData.lowest_sell,
                 close: newData.lowest_sell,
             };
             const volumeData = {
-                time: new Date(newData.timestamp).getTime() / 1000,
+                time: (new Date(newData.timestamp).getTime() / 1000) as UTCTimestamp,
                 value: newData.buy_volume + newData.sell_volume,
                 color: newData.highest_buy > newData.lowest_sell ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
             };
