@@ -1,5 +1,6 @@
 fastapi
 uvicorn
+websockets==9.1
 sqlalchemy
 psycopg2-binary
 requests
