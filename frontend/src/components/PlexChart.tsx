@@ -76,24 +76,98 @@ const PlexChart: React.FC = () => {
     }, []);
 
     useEffect(() => {
+        const aggregateData = (data: PlexData[], timeframe: string) => {
+            const aggregatedData = new Map<number, {
+                open: number;
+                high: number;
+                low: number;
+                close: number;
+                volume: number;
+            }>();
+
+            const getTimestamp = (date: Date) => {
+                const d = new Date(date);
+                if (timeframe === '1H') {
+                    d.setMinutes(0, 0, 0);
+                } else if (timeframe === '1D') {
+                    d.setHours(0, 0, 0, 0);
+                } else if (timeframe === '1W') {
+                    const day = d.getDay();
+                    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+                    d.setDate(diff);
+                    d.setHours(0, 0, 0, 0);
+                } else if (timeframe === '1M') {
+                    d.setDate(1);
+                    d.setHours(0, 0, 0, 0);
+                }
+                return d.getTime() / 1000;
+            };
+
+            data.forEach(item => {
+                const timestamp = getTimestamp(new Date(item.timestamp));
+                const existing = aggregatedData.get(timestamp);
+
+                if (existing) {
+                    existing.high = Math.max(existing.high, item.highest_buy);
+                    existing.low = Math.min(existing.low, item.lowest_sell);
+                    existing.close = item.lowest_sell;
+                    existing.volume += item.buy_volume + item.sell_volume;
+                } else {
+                    aggregatedData.set(timestamp, {
+                        open: item.highest_buy,
+                        high: item.highest_buy,
+                        low: item.lowest_sell,
+                        close: item.lowest_sell,
+                        volume: item.buy_volume + item.sell_volume,
+                    });
+                }
+            });
+
+            const candleData = Array.from(aggregatedData.entries()).map(([timestamp, values]) => ({
+                time: timestamp as UTCTimestamp,
+                open: values.open,
+                high: values.high,
+                low: values.low,
+                close: values.close,
+            }));
+
+            const volumeData = Array.from(aggregatedData.entries()).map(([timestamp, values]) => ({
+                time: timestamp as UTCTimestamp,
+                value: values.volume,
+                color: values.open > values.close ? 'rgba(239, 83, 80, 0.5)' : 'rgba(38, 166, 154, 0.5)',
+            }));
+
+            return { candleData, volumeData };
+        };
+
         const fetchData = async () => {
             try {
                 const response = await fetch(`/historical-data/?timeframe=${timeframe}`);
                 const data: PlexData[] = await response.json();
 
-                const candleData = data.map(item => ({
-                    time: (new Date(item.timestamp).getTime() / 1000) as UTCTimestamp,
-                    open: item.highest_buy,
-                    high: item.highest_buy,
-                    low: item.lowest_sell,
-                    close: item.lowest_sell,
-                }));
+                // Sort by timestamp to ensure correct open/close values
+                data.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
-                const volumeData = data.map(item => ({
-                    time: (new Date(item.timestamp).getTime() / 1000) as UTCTimestamp,
-                    value: item.buy_volume + item.sell_volume,
-                    color: item.highest_buy > item.lowest_sell ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
-                }));
+                let candleData;
+                let volumeData;
+
+                if (timeframe === '5M') {
+                    candleData = data.map(item => ({
+                        time: (new Date(item.timestamp).getTime() / 1000) as UTCTimestamp,
+                        open: item.highest_buy,
+                        high: item.highest_buy,
+                        low: item.lowest_sell,
+                        close: item.lowest_sell,
+                    }));
+
+                    volumeData = data.map(item => ({
+                        time: (new Date(item.timestamp).getTime() / 1000) as UTCTimestamp,
+                        value: item.buy_volume + item.sell_volume,
+                        color: item.highest_buy > item.lowest_sell ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
+                    }));
+                } else {
+                    ({ candleData, volumeData } = aggregateData(data, timeframe));
+                }
 
                 if (candlestickSeriesRef.current) {
                     candlestickSeriesRef.current.setData(candleData);
