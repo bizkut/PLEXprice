@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createChart, IChartApi, ISeriesApi, CandlestickSeries, HistogramSeries, UTCTimestamp, LineSeries } from 'lightweight-charts';
+import './PlexChart.css';
 
 interface PlexData {
     timestamp: string;
@@ -303,30 +304,26 @@ const PlexChart: React.FC = () => {
                 </span>
             </div>
             <div ref={chartContainerRef} style={{ marginTop: '20px' }} />
-            <div style={{ marginTop: '20px' }}>
-                <div>
-                    <label>
-                        ISK to PLEX:
-                        <input
-                            type="text"
-                            value={iskAmount}
-                            onChange={handleIskChange}
-                            placeholder="Enter ISK amount"
-                            style={{ marginLeft: '10px' }}
-                        />
-                    </label>
+            <div className="calculator-container">
+                <div className="calculator">
+                    <label htmlFor="isk-input">ISK to PLEX</label>
+                    <input
+                        id="isk-input"
+                        type="text"
+                        value={iskAmount}
+                        onChange={handleIskChange}
+                        placeholder="Enter ISK amount"
+                    />
                 </div>
-                <div style={{ marginTop: '10px' }}>
-                    <label>
-                        PLEX to ISK:
-                        <input
-                            type="number"
-                            value={plexAmount}
-                            onChange={handlePlexChange}
-                            placeholder="Enter PLEX amount"
-                            style={{ marginLeft: '10px' }}
-                        />
-                    </label>
+                <div className="calculator">
+                    <label htmlFor="plex-input">PLEX to ISK</label>
+                    <input
+                        id="plex-input"
+                        type="number"
+                        value={plexAmount}
+                        onChange={handlePlexChange}
+                        placeholder="Enter PLEX amount"
+                    />
                 </div>
             </div>
         </div>
