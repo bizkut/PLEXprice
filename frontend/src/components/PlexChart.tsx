@@ -17,7 +17,7 @@ const PlexChart: React.FC = () => {
     const highestBuySeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
     const lowestSellSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
 
-    const [timeframe, setTimeframe] = useState('1D');
+    const [timeframe, setTimeframe] = useState('5M');
     const [isConnected, setIsConnected] = useState(false);
     const [allPlexData, setAllPlexData] = useState<PlexData[]>([]);
     const [iskAmount, setIskAmount] = useState<number | string>('');
