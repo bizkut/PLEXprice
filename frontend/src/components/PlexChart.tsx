@@ -28,6 +28,14 @@ const PlexChart: React.FC = () => {
             chartRef.current = createChart(chartContainerRef.current, {
                 width: chartContainerRef.current.clientWidth,
                 height: 500,
+                localization: {
+                    priceFormatter: (price: number) => {
+                        return price.toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                        });
+                    },
+                },
                 layout: {
                     background: {
                         color: '#1a1a1a',
@@ -247,23 +255,38 @@ const PlexChart: React.FC = () => {
 
     const latestPrice = allPlexData.length > 0 ? allPlexData[allPlexData.length - 1].lowest_sell : 0;
 
+    const formatIsk = (amount: number) => {
+        return amount.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+    };
+
     const handleIskChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const amount = parseFloat(e.target.value);
-        setIskAmount(isNaN(amount) ? '' : amount);
-        if (!isNaN(amount) && latestPrice > 0) {
-            setPlexAmount((amount / latestPrice).toFixed(2));
-        } else {
+        const value = e.target.value.replace(/,/g, '');
+        const amount = parseFloat(value);
+        if (isNaN(amount)) {
+            setIskAmount('');
             setPlexAmount('');
+            return;
+        }
+
+        setIskAmount(amount.toLocaleString('en-US'));
+        if (latestPrice > 0) {
+            setPlexAmount((amount / latestPrice).toFixed(2));
         }
     };
 
     const handlePlexChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const amount = parseFloat(e.target.value);
-        setPlexAmount(isNaN(amount) ? '' : amount);
-        if (!isNaN(amount) && latestPrice > 0) {
-            setIskAmount((amount * latestPrice).toFixed(2));
-        } else {
+        if (isNaN(amount)) {
+            setPlexAmount('');
             setIskAmount('');
+            return;
+        }
+        setPlexAmount(amount);
+        if (latestPrice > 0) {
+            setIskAmount(formatIsk(amount * latestPrice));
         }
     };
 
@@ -285,7 +308,7 @@ const PlexChart: React.FC = () => {
                     <label>
                         ISK to PLEX:
                         <input
-                            type="number"
+                            type="text"
                             value={iskAmount}
                             onChange={handleIskChange}
                             placeholder="Enter ISK amount"
