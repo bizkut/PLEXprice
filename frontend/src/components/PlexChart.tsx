@@ -164,7 +164,7 @@ const PlexChart: React.FC = () => {
                     volumeData = data.map(item => ({
                         time: (new Date(item.timestamp).getTime() / 1000) as UTCTimestamp,
                         value: item.buy_volume + item.sell_volume,
-                        color: item.highest_buy > item.lowest_sell ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
+                        color: item.highest_buy < item.lowest_sell ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
                     }));
                 } else {
                     ({ candleData, volumeData } = aggregateData(data, timeframe));
