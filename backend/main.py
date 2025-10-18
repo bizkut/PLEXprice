@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends, WebSocket, WebSocketDisconnect
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fetch_data import fetch_and_store_plex_data
 from sqlalchemy.orm import Session
 from database import SessionLocal, PlexPrice, init_db
@@ -21,7 +21,7 @@ async def start_scheduler():
     init_db()
     print("Database initialized.")
 
-    scheduler = BackgroundScheduler()
+    scheduler = AsyncIOScheduler()
     # Fetch data on startup and then every 5 minutes
     await fetch_and_store_plex_data()
     scheduler.add_job(fetch_and_store_plex_data, 'interval', minutes=5)
