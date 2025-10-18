@@ -142,7 +142,8 @@ const PlexChart: React.FC = () => {
 
         const fetchData = async () => {
             try {
-                const response = await fetch(`/historical-data/?timeframe=${timeframe}`);
+                // Always fetch the last month of data
+                const response = await fetch(`/historical-data/?timeframe=1M`);
                 const data: PlexData[] = await response.json();
 
                 // Sort by timestamp to ensure correct open/close values
