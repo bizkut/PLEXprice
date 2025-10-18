@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, WebSocket
+from fastapi import FastAPI, Depends, WebSocket, WebSocketDisconnect
 from apscheduler.schedulers.background import BackgroundScheduler
 from fetch_data import fetch_and_store_plex_data
 from sqlalchemy.orm import Session
@@ -58,7 +58,8 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             # Keep the connection alive by waiting for messages
             await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
     except Exception as e:
         print(f"WebSocket Error: {e}")
-    finally:
         manager.disconnect(websocket)
