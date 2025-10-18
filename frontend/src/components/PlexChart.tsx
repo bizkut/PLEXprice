@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { createChart, IChartApi, ISeriesApi, CandlestickSeries, HistogramSeries, UTCTimestamp } from 'lightweight-charts';
+import { createChart, IChartApi, ISeriesApi, CandlestickSeries, HistogramSeries, UTCTimestamp, LineSeries } from 'lightweight-charts';
 
 interface PlexData {
     timestamp: string;
@@ -14,9 +14,12 @@ const PlexChart: React.FC = () => {
     const chartRef = useRef<IChartApi | null>(null);
     const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
     const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
+    const highestBuySeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
+    const lowestSellSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
 
     const [timeframe, setTimeframe] = useState('1D');
     const [isConnected, setIsConnected] = useState(false);
+    const [allPlexData, setAllPlexData] = useState<PlexData[]>([]);
 
     useEffect(() => {
         if (chartContainerRef.current) {
@@ -66,12 +69,62 @@ const PlexChart: React.FC = () => {
                     bottom: 0,
                 },
             });
+
+            highestBuySeriesRef.current = chartRef.current.addSeries(LineSeries, {
+                color: '#26a69a',
+                lineWidth: 2,
+            });
+
+            lowestSellSeriesRef.current = chartRef.current.addSeries(LineSeries, {
+                color: '#ef5350',
+                lineWidth: 2,
+            });
         }
 
         return () => {
             if (chartRef.current) {
                 chartRef.current.remove();
             }
+        };
+    }, []);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const response = await fetch(`/historical-data/?window=1M`);
+                const data: PlexData[] = await response.json();
+                setAllPlexData(data);
+            } catch (error) {
+                console.error('Error fetching historical data:', error);
+            }
+        };
+
+        fetchData();
+
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+
+        ws.onopen = () => {
+            console.log('WebSocket connected');
+            setIsConnected(true);
+        };
+
+        ws.onmessage = (event) => {
+            const newData = JSON.parse(event.data);
+            setAllPlexData(prevData => [...prevData, newData]);
+        };
+
+        ws.onclose = () => {
+            console.log('WebSocket disconnected');
+            setIsConnected(false);
+        };
+
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+
+        return () => {
+            ws.close();
         };
     }, []);
 
@@ -140,96 +193,55 @@ const PlexChart: React.FC = () => {
             return { candleData, volumeData };
         };
 
-        const fetchData = async () => {
-            try {
-                // Always fetch the last month of data
-                const response = await fetch(`/historical-data/?timeframe=1M`);
-                const data: PlexData[] = await response.json();
+        if (allPlexData.length === 0) {
+            return;
+        }
 
-                // Sort by timestamp to ensure correct open/close values
-                data.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        // Sort by timestamp to ensure correct open/close values
+        const sortedData = [...allPlexData].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
-                let candleData;
-                let volumeData;
+        let candleData;
+        let volumeData;
 
-                if (timeframe === '5M') {
-                    candleData = data.map(item => ({
-                        time: (new Date(item.timestamp).getTime() / 1000) as UTCTimestamp,
-                        open: item.highest_buy,
-                        high: item.highest_buy,
-                        low: item.lowest_sell,
-                        close: item.lowest_sell,
-                    }));
+        if (timeframe === '5M') {
+            candleData = sortedData.map(item => ({
+                time: (new Date(item.timestamp).getTime() / 1000) as UTCTimestamp,
+                open: item.highest_buy,
+                high: item.highest_buy,
+                low: item.lowest_sell,
+                close: item.lowest_sell,
+            }));
 
-                    volumeData = data.map(item => ({
-                        time: (new Date(item.timestamp).getTime() / 1000) as UTCTimestamp,
-                        value: item.buy_volume + item.sell_volume,
-                        color: item.highest_buy < item.lowest_sell ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
-                    }));
-                } else {
-                    ({ candleData, volumeData } = aggregateData(data, timeframe));
-                }
+            volumeData = sortedData.map((item, index) => {
+                const prevItem = sortedData[index - 1] || item;
+                const close = item.lowest_sell;
+                const prevClose = prevItem.lowest_sell;
+                return {
+                    time: (new Date(item.timestamp).getTime() / 1000) as UTCTimestamp,
+                    value: item.buy_volume + item.sell_volume,
+                    color: close >= prevClose ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
+                };
+            });
+        } else {
+            ({ candleData, volumeData } = aggregateData(sortedData, timeframe));
+        }
 
-                if (candlestickSeriesRef.current) {
-                    candlestickSeriesRef.current.setData(candleData);
-                }
-                if (volumeSeriesRef.current) {
-                    volumeSeriesRef.current.setData(volumeData);
-                }
+        const highestBuyData = candleData.map(item => ({ time: item.time, value: item.high }));
+        const lowestSellData = candleData.map(item => ({ time: item.time, value: item.low }));
 
-            } catch (error) {
-                console.error('Error fetching historical data:', error);
-            }
-        };
-
-        fetchData();
-    }, [timeframe]);
-
-    useEffect(() => {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
-
-        ws.onopen = () => {
-            console.log('WebSocket connected');
-            setIsConnected(true);
-        };
-
-        ws.onmessage = (event) => {
-            const newData = JSON.parse(event.data);
-            const candleData = {
-                time: (new Date(newData.timestamp).getTime() / 1000) as UTCTimestamp,
-                open: newData.highest_buy,
-                high: newData.highest_buy,
-                low: newData.lowest_sell,
-                close: newData.lowest_sell,
-            };
-            const volumeData = {
-                time: (new Date(newData.timestamp).getTime() / 1000) as UTCTimestamp,
-                value: newData.buy_volume + newData.sell_volume,
-                color: newData.highest_buy > newData.lowest_sell ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
-            };
-
-            if (candlestickSeriesRef.current) {
-                candlestickSeriesRef.current.update(candleData);
-            }
-            if (volumeSeriesRef.current) {
-                volumeSeriesRef.current.update(volumeData);
-            }
-        };
-
-        ws.onclose = () => {
-            console.log('WebSocket disconnected');
-            setIsConnected(false);
-        };
-
-        ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
-        };
-
-        return () => {
-            ws.close();
-        };
-    }, []);
+        if (candlestickSeriesRef.current) {
+            candlestickSeriesRef.current.setData(candleData);
+        }
+        if (volumeSeriesRef.current) {
+            volumeSeriesRef.current.setData(volumeData);
+        }
+        if (highestBuySeriesRef.current) {
+            highestBuySeriesRef.current.setData(highestBuyData);
+        }
+        if (lowestSellSeriesRef.current) {
+            lowestSellSeriesRef.current.setData(lowestSellData);
+        }
+    }, [timeframe, allPlexData]);
 
     return (
         <div>
