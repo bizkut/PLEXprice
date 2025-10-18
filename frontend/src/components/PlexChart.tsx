@@ -20,6 +20,8 @@ const PlexChart: React.FC = () => {
     const [timeframe, setTimeframe] = useState('1D');
     const [isConnected, setIsConnected] = useState(false);
     const [allPlexData, setAllPlexData] = useState<PlexData[]>([]);
+    const [iskAmount, setIskAmount] = useState<number | string>('');
+    const [plexAmount, setPlexAmount] = useState<number | string>('');
 
     useEffect(() => {
         if (chartContainerRef.current) {
@@ -243,6 +245,28 @@ const PlexChart: React.FC = () => {
         }
     }, [timeframe, allPlexData]);
 
+    const latestPrice = allPlexData.length > 0 ? allPlexData[allPlexData.length - 1].lowest_sell : 0;
+
+    const handleIskChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const amount = parseFloat(e.target.value);
+        setIskAmount(isNaN(amount) ? '' : amount);
+        if (!isNaN(amount) && latestPrice > 0) {
+            setPlexAmount((amount / latestPrice).toFixed(2));
+        } else {
+            setPlexAmount('');
+        }
+    };
+
+    const handlePlexChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const amount = parseFloat(e.target.value);
+        setPlexAmount(isNaN(amount) ? '' : amount);
+        if (!isNaN(amount) && latestPrice > 0) {
+            setIskAmount((amount * latestPrice).toFixed(2));
+        } else {
+            setIskAmount('');
+        }
+    };
+
     return (
         <div>
             <div>
@@ -256,6 +280,32 @@ const PlexChart: React.FC = () => {
                 </span>
             </div>
             <div ref={chartContainerRef} style={{ marginTop: '20px' }} />
+            <div style={{ marginTop: '20px' }}>
+                <div>
+                    <label>
+                        ISK to PLEX:
+                        <input
+                            type="number"
+                            value={iskAmount}
+                            onChange={handleIskChange}
+                            placeholder="Enter ISK amount"
+                            style={{ marginLeft: '10px' }}
+                        />
+                    </label>
+                </div>
+                <div style={{ marginTop: '10px' }}>
+                    <label>
+                        PLEX to ISK:
+                        <input
+                            type="number"
+                            value={plexAmount}
+                            onChange={handlePlexChange}
+                            placeholder="Enter PLEX amount"
+                            style={{ marginLeft: '10px' }}
+                        />
+                    </label>
+                </div>
+            </div>
         </div>
     );
 };
