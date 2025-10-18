@@ -2,6 +2,11 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Features
+
+- **Real-time PLEX Market Chart:** Displays the latest EVE Online PLEX market data in a candlestick chart.
+- **ISK/PLEX Calculators:** Allows users to convert between ISK and PLEX in real-time based on the latest market price.
+
 ## Available Scripts
 
 In the project directory, you can run:
