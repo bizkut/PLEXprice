@@ -29,17 +29,17 @@ async def start_scheduler():
     print("Scheduler started. Fetching data every 5 minutes.")
 
 @app.get("/historical-data/")
-def get_historical_data(timeframe: str = "1D", db: Session = Depends(get_db)):
+def get_historical_data(window: str = "1D", db: Session = Depends(get_db)):
     end_date = datetime.datetime.utcnow()
-    if timeframe == "5M":
+    if window == "5M":
         start_date = end_date - datetime.timedelta(minutes=5)
-    elif timeframe == "1H":
+    elif window == "1H":
         start_date = end_date - datetime.timedelta(hours=1)
-    elif timeframe == "1D":
+    elif window == "1D":
         start_date = end_date - datetime.timedelta(days=1)
-    elif timeframe == "1W":
+    elif window == "1W":
         start_date = end_date - datetime.timedelta(weeks=1)
-    elif timeframe == "1M":
+    elif window == "1M":
         start_date = end_date - datetime.timedelta(days=30)
     else:
         start_date = end_date - datetime.timedelta(days=1)
