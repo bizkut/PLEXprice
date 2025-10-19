@@ -276,12 +276,12 @@ const PlexChart: React.FC = () => {
 
         setIskAmount(amount.toLocaleString('en-US'));
         if (buyPrice > 0) {
-            setPlexAmount((amount / buyPrice).toFixed(2));
+            setPlexAmount(Math.floor(amount / buyPrice));
         }
     };
 
     const handlePlexChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const amount = parseFloat(e.target.value);
+        const amount = parseInt(e.target.value, 10);
         if (isNaN(amount)) {
             setPlexAmount('');
             setIskAmount('');
