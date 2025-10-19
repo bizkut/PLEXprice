@@ -254,7 +254,9 @@ const PlexChart: React.FC = () => {
         }
     }, [timeframe, allPlexData]);
 
-    const latestPrice = allPlexData.length > 0 ? allPlexData[allPlexData.length - 1].lowest_sell : 0;
+    const latestData = allPlexData.length > 0 ? allPlexData[allPlexData.length - 1] : null;
+    const buyPrice = latestData ? latestData.highest_buy : 0;
+    const sellPrice = latestData ? latestData.lowest_sell : 0;
 
     const formatIsk = (amount: number) => {
         return amount.toLocaleString('en-US', {
@@ -273,21 +275,21 @@ const PlexChart: React.FC = () => {
         }
 
         setIskAmount(amount.toLocaleString('en-US'));
-        if (latestPrice > 0) {
-            setPlexAmount((amount / latestPrice).toFixed(2));
+        if (buyPrice > 0) {
+            setPlexAmount(Math.floor(amount / buyPrice));
         }
     };
 
     const handlePlexChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const amount = parseFloat(e.target.value);
+        const amount = parseInt(e.target.value, 10);
         if (isNaN(amount)) {
             setPlexAmount('');
             setIskAmount('');
             return;
         }
         setPlexAmount(amount);
-        if (latestPrice > 0) {
-            setIskAmount(formatIsk(amount * latestPrice));
+        if (sellPrice > 0) {
+            setIskAmount(formatIsk(amount * sellPrice));
         }
     };
 
